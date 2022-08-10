@@ -1,0 +1,355 @@
+/*********************************************************************
+*                 (c) SEGGER Microcontroller GmbH                    *
+*                      The Embedded Experts                          *
+*                         www.segger.com                             *
+**********************************************************************
+
+File          : C:/Users/yuanj/Desktop/PersimWear/firmware/boards/stm32h750-art-pi/art-pi/STM32H750XB_400Mhz_Ozone_Trace.jdebug
+Created       : 9 Aug 2022 14:23
+Ozone Version : V3.26
+*/
+
+/*********************************************************************
+*
+*       OnProjectLoad
+*
+* Function description
+*   Project load routine. Required.
+*
+**********************************************************************
+*/
+void OnProjectLoad (void) {
+  //
+  // Dialog-generated settings
+  //
+  Project.SetDevice ("STM32H750XB");
+  Project.SetHostIF ("USB", "");
+  Project.SetTargetIF ("SWD");
+  Project.SetTIFSpeed ("1 MHz");
+  Project.SetTraceSource ("Trace Pins");
+  Project.SetTraceTiming (100, 100, 100, 100);
+  Project.AddPathSubstitute ("D:/RT-Thread-Repository/sdk-bsp-stm32h750-realthread-artpi/projects/art_pi_blink_led", "$(ProjectDir)");
+  Project.AddPathSubstitute ("d:/rt-thread-repository/sdk-bsp-stm32h750-realthread-artpi/projects/art_pi_blink_led", "$(ProjectDir)");
+  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M7F.svd");
+  Project.AddSvdFile ("D:/Packages/MDK/Keil/STM32H7xx_DFP/2.8.0/CMSIS/SVD/STM32H750x.svd");
+  //
+  // User settings
+  //
+  Edit.SysVar (VAR_TRACE_MAX_INST_CNT, 2200000000);
+  // Edit.SysVar (VAR_POWER_SAMPLING_SPEED, FREQ_1_KHZ);
+  // File.Open ("$(ProjectDir)/Debug/rtthread.elf");
+  //MDK selection
+  File.Open ("$(ProjectDir)/build/rt-thread.axf");
+}
+
+/*********************************************************************
+*
+*       OnStartupComplete
+*
+* Function description
+*   Called when program execution has reached/passed
+*   the startup completion point. Optional.
+*
+**********************************************************************
+*/
+//void OnStartupComplete (void) {
+//}
+
+/*********************************************************************
+*
+*      TargetReset
+*
+* Function description
+*   Replaces the default target device reset routine. Optional.
+*
+* Notes
+*   This example demonstrates the usage when
+*   debugging an application in RAM on a Cortex-M target device.
+*
+**********************************************************************
+*/
+//void TargetReset (void) {
+//
+//  unsigned int SP;
+//  unsigned int PC;
+//  unsigned int VectorTableAddr;
+//
+//  VectorTableAddr = Elf.GetBaseAddr();
+//  //
+//  // Set up initial stack pointer
+//  //
+//  if (VectorTableAddr != 0xFFFFFFFF) {
+//    SP = Target.ReadU32(VectorTableAddr);
+//    Target.SetReg("SP", SP);
+//  }
+//  //
+//  // Set up entry point PC
+//  //
+//  PC = Elf.GetEntryPointPC();
+//
+//  if (PC != 0xFFFFFFFF) {
+//    Target.SetReg("PC", PC);
+//  } else if (VectorTableAddr != 0xFFFFFFFF) {
+//    PC = Target.ReadU32(VectorTableAddr + 4);
+//    Target.SetReg("PC", PC);
+//  } else {
+//    Util.Error("Project file error: failed to set entry point PC", 1);
+//  }
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetReset
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetReset (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterTargetReset
+*
+* Function description
+*   Event handler routine. Optional.
+*   The default implementation initializes SP and PC to reset values.
+**
+**********************************************************************
+*/
+void AfterTargetReset(void)
+{
+  unsigned int SP;
+  unsigned int PC;
+  unsigned int VectorTableAddr;
+
+  VectorTableAddr = Elf.GetBaseAddr();
+  // VectorTableAddr = 0x08000000;
+  if (VectorTableAddr == 0xFFFFFFFF)
+  {
+    Util.Log("Project file error: failed to get program base");
+  }
+  else
+  {
+    Util.Log("Boot from 0x08000000");
+    SP = Target.ReadU32(VectorTableAddr);
+    Target.SetReg("SP", SP);
+
+    PC = Target.ReadU32(VectorTableAddr + 4);
+    Target.SetReg("PC", PC);
+  }
+}
+
+/*********************************************************************
+*
+*       DebugStart
+*
+* Function description
+*   Replaces the default debug session startup routine. Optional.
+*
+**********************************************************************
+*/
+//void DebugStart (void) {
+//}
+
+/*********************************************************************
+*
+*       TargetConnect
+*
+* Function description
+*   Replaces the default target IF connection routine. Optional.
+*
+**********************************************************************
+*/
+//void TargetConnect (void) {
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetConnect
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+void BeforeTargetConnect (void) {
+  //
+  // Trace pin init is done by J-Link script file as J-Link script files are IDE independent
+  //
+  // Project.SetJLinkScript("./ST_STM32H743_Traceconfig.pex");
+  Project.SetJLinkScript("./ST_STM32H750_400Mhz_Traceconfig.JLinkScript");
+}
+
+/*********************************************************************
+*
+*       AfterTargetConnect
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void AfterTargetConnect (void) {
+//}
+
+/*********************************************************************
+*
+*       TargetDownload
+*
+* Function description
+*   Replaces the default program download routine. Optional.
+*
+**********************************************************************
+*/
+//void TargetDownload (void) {
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetDownload
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetDownload (void) {
+//}
+
+/*********************************************************************
+*
+*      AfterTargetDownload
+*
+* Function description
+*   Event handler routine. Optional.
+*   The default implementation initializes SP and PC to reset values.
+*
+**********************************************************************
+*/
+// void AfterTargetDownload (void) {
+// }
+
+/*********************************************************************
+*
+*       BeforeTargetDisconnect
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetDisconnect (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterTargetDisconnect
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void AfterTargetDisconnect (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterTargetHalt
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void AfterTargetHalt (void) {
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetResume
+*
+* Function description
+*   Event handler routine. Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetResume (void) {
+//}
+
+/*********************************************************************
+*
+*       OnSnapshotLoad
+*
+* Function description
+*   Called upon loading a snapshot. Optional.
+*
+* Additional information
+*   This function is used to restore the target state in cases
+*   where values cannot simply be written to the target.
+*   Typical use: GPIO clock needs to be enabled, before
+*   GPIO is configured.
+*
+**********************************************************************
+*/
+//void OnSnapshotLoad (void) {
+//}
+
+/*********************************************************************
+*
+*       OnSnapshotSave
+*
+* Function description
+*   Called upon saving a snapshot. Optional.
+*
+* Additional information
+*   This function is usually used to save values of the target
+*   state which can either not be trivially read,
+*   or need to be restored in a specific way or order.
+*   Typically use: Memory Mapped Registers,
+*   such as PLL and GPIO configuration.
+*
+**********************************************************************
+*/
+//void OnSnapshotSave (void) {
+//}
+
+/*********************************************************************
+*
+*       OnError
+*
+* Function description
+*   Called when an error ocurred. Optional.
+*
+**********************************************************************
+*/
+//void OnError (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterProjectLoad
+*
+* Function description
+*   After Project load routine. Optional.
+*
+**********************************************************************
+*/
+//void AfterProjectLoad (void) {
+//}
+
+/*********************************************************************
+*
+*       _SetupTarget
+*
+* Function description
+*   Setup the target.
+*   Called by AfterTargetReset() and AfterTargetDownload().
+*
+*   Auto-generated function. May be overridden by Ozone.
+*
+**********************************************************************
+*/
