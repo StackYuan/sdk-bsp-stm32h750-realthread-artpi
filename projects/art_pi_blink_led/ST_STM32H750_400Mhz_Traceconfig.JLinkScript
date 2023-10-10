@@ -6,7 +6,7 @@
 
 -------------------------- END-OF-HEADER -----------------------------
 
-File    : ST_STM32H750_Modified_Traceconfig.JLinkScript
+File    : ST_STM32H750_400Mhz_Traceconfig.JLinkScript
 Purpose : Examplescript to modify TracePortWidth and Pin init
 Literature:
   [1]  J-Link User Guide
@@ -14,6 +14,37 @@ Literature:
 Additional information:
   For more information about public functions that can be implemented in order to customize J-Link actions, please refer to [1]
 */
+
+/*********************************************************************
+*                                                                     
+*       ConfigTargetSettings   
+*
+*  Function description
+*    Called before InitTarget(). Mainly used to set some global DLL variables to customize the
+*    normal  connect  procedure.  For  ARM  CoreSight  devices  this  may  be  specifying  the  base
+*    address of some CoreSight components (ETM, …) that cannot be auto-detected by J-Link
+*    due to erroneous ROM tables etc. May also be used to specify the device name in case
+*    debugger does not pass it to the DLL.                    
+*
+*  Notes
+*    (1) May not, under absolutely NO circumstances, call any API functions that perform target communication.
+*    (2) Should only set some global DLL variables
+*
+*  Return value
+*    >= 0  O.K.
+*     < 0  Error
+*      -1  Unspecified error
+*/
+int ConfigTargetSettings(void) {
+  //
+  // Enable erase for all flash banks (e.g. QSPI)
+  //
+  JLINK_SYS_Report("-ConfigSettings.-");
+  JLINK_ExecCommand("CORESIGHT_SetCSTFBaseAddr = 0xE00F3000 ForceUnlock = 1 APIndex = 2");
+  JLINK_ExecCommand("CORESIGHT_SetTPIUBaseAddr = 0xE00F5000 ForceUnlock = 1 APIndex = 2");
+  JLINK_ExecCommand("CORESIGHT_SetTMCBaseAddr = 0xE00F4000 ForceUnlock = 1 APIndex = 2");
+  return 0;
+}
 
 /*********************************************************************
 *
@@ -62,12 +93,12 @@ int OnTraceStart(void) {
   //
   //JLINK_TRACE_PortWidth = 4;
   //
-  // RCC_AHB1ENR:    0x40023830          Periphal clock register
-  // GPIOE_MODER:    0x40021000          GPIO Port mode register
-  // GPIOE_PUPDR:    0x4002100C          GPIO Pullup/Puldown register
-  // GPIOE_OSPEEDR:  0x40021008          GPIO output speed register
-  // GPIOE_AFRL:     0x40021020          GPIO Alternate function low register
-  // DBGMCU_CR:      0xE0042004          Debug MCU register
+  // RCC_AHB4ENR_Addr   0x580244E0          Periphal clock register
+  // GPIOE_MODER:       0x58021000          GPIO Port mode register
+  // GPIOE_PUPDR:       0x5802100C          GPIO Pullup/Puldown register
+  // GPIOE_OSPEEDR:     0x58021008          GPIO output speed register
+  // GPIOE_AFRL:        0x58021020          GPIO Alternate function low register
+  // DBGMCU_CR:         0x5C001004          Debug MCU register
   //
   //   PE2 => TCLK
   //   PG13 => TD0
@@ -78,7 +109,8 @@ int OnTraceStart(void) {
   //
   // Init register addresses
   //
-  JLINK_SYS_Report("Start: Initializing trace pins");
+  JLINK_SYS_Report("Start: Initializing trace pins.");
+
   RCC_AHB4ENR_Addr   = 0x580244E0;
 
   GPIOE_MODER_Addr   = 0x58021000;
@@ -213,22 +245,18 @@ int OnTraceStart(void) {
       v  =  JLINK_MEM_ReadU32(GPIOE_AFRL_Addr);
       v  &= ~(15 << (4 * iTD3));              // Select alt func 0
       JLINK_MEM_WriteU32(GPIOE_AFRL_Addr, v);
-      //
-      // Enable trace and set portwidth
-      //
-      v  =  JLINK_MEM_ReadU32(DBGMCU_CR_Addr);               // Debug MCU sets how many Pins to use for trace (STM32 specific)
-      v  &= ~(7 << 5);               // Mask Register
-      v  |= (7 << 5);                // Enable Trace and Select configured Tracepins for Trace
-      JLINK_MEM_WriteU32(DBGMCU_CR_Addr, v);
+
   }
-  if (PortWidth < 3){
-    JLINK_SYS_Report("DBGMCU Init");
-    v  =  JLINK_MEM_ReadU32(DBGMCU_CR_Addr);               // Debug MCU sets how many Pins to use for trace (STM32 specific)
-    v  &= ~(7 << 5);               // Mask Register
-    v  |= (1 << 5);                // Enable Trace
-    v  |= ((PortWidth) << 6);                // Enable Trace and Select configured Tracepins for Trace
-    JLINK_MEM_WriteU32(DBGMCU_CR_Addr, v);
-  }
-  JLINK_SYS_Report("End: Initializing trace pins");
+  //
+  //  Config DBUGMCU
+  //
+  v  =  JLINK_MEM_ReadU32(DBGMCU_CR_Addr);               // Debug MCU enables traceclk (STM32H7 specific)
+  v  &= ~(1 << 20);               // Mask Traceclk Register
+  v  |= (1 << 20);                // Enable Traceclk
+  v  |= (1 << 21);                // D1DBGCKEN
+  v  |= (1 << 22);                // D3DBGCKEN
+  JLINK_MEM_WriteU32(DBGMCU_CR_Addr, v);
+
+  JLINK_SYS_Report("End: Initializing trace pins.");
   return 0;
 }
